@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interactive FAQ Accordion — Accessible (Tailwind + Vanilla JS)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Smooth height transition helper: we animate the inline height (measured in JS) */
+    .accordion-content {
+      overflow: hidden;
+      height: 0; /* collapsed */
+      transition: height 280ms ease;
+    }
+
+    /* Chevron rotation when expanded */
+    .chev {
+      transition: transform 200ms ease;
+      transform-origin: center;
+    }
+    .chev.open {
+      transform: rotate(180deg);
+    }
+
+    /* small focus ring for header buttons */
+    .acc-btn:focus {
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+      outline: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-8">
+  <main class="max-w-3xl mx-auto">
+    <h1 class="text-2xl font-semibold mb-4">FAQ — Accessible Accordion</h1>
+
+    <p class="mb-6 text-sm text-slate-600">Keyboard-accessible expand/collapse, chevron rotation, smooth height transitions. No frameworks — pure JS + Tailwind.</p>
+
+    <!-- Accordion: set data-single="true" to allow only one item open at a time -->
+    <div id="faq" class="space-y-3" role="region" aria-label="Frequently asked questions" data-single="true">
+
+      <!-- Item 1 -->
+      <section class="bg-white rounded-lg shadow-sm border border-slate-200">
+        <h2>
+          <button type="button" class="w-full acc-btn text-left px-4 py-3 flex items-center justify-between gap-4 rounded-lg" aria-expanded="false" aria-controls="faq1_desc" id="faq1_btn">
+            <span class="font-medium">How do I reset my password?</span>
+            <svg class="chev w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </h2>
+        <div id="faq1_desc" class="accordion-content px-4" role="region" aria-labelledby="faq1_btn">
+          <div class="py-3 text-sm text-slate-700">To reset your password, go to the account settings page, choose "Password", and follow the on-screen steps. We'll also email a confirmation link to the address on file.</div>
+        </div>
+      </section>
+
+      <!-- Item 2 -->
+      <section class="bg-white rounded-lg shadow-sm border border-slate-200">
+        <h2>
+          <button type="button" class="w-full acc-btn text-left px-4 py-3 flex items-center justify-between gap-4 rounded-lg" aria-expanded="false" aria-controls="faq2_desc" id="faq2_btn">
+            <span class="font-medium">Where can I find my invoices?</span>
+            <svg class="chev w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </h2>
+        <div id="faq2_desc" class="accordion-content px-4" role="region" aria-labelledby="faq2_btn">
+          <div class="py-3 text-sm text-slate-700">Invoices are available under Billing &gt; Invoices. You can download PDF copies or filter by date and subscription.</div>
+        </div>
+      </section>
+
+      <!-- Item 3 -->
+      <section class="bg-white rounded-lg shadow-sm border border-slate-200">
+        <h2>
+          <button type="button" class="w-full acc-btn text-left px-4 py-3 flex items-center justify-between gap-4 rounded-lg" aria-expanded="false" aria-controls="faq3_desc" id="faq3_btn">
+            <span class="font-medium">Can I change my plan mid-cycle?</span>
+            <svg class="chev w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </h2>
+        <div id="faq3_desc" class="accordion-content px-4" role="region" aria-labelledby="faq3_btn">
+          <div class="py-3 text-sm text-slate-700">Yes — you can upgrade or downgrade at any time. Prorating rules are applied based on the remaining cycle time; see Billing docs for exact details.</div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <script>
+    /* Accessible accordion behavior (vanilla JS)
+       Features:
+         - Click or Enter/Space toggles an item
+         - ArrowUp / ArrowDown move focus between headers
+         - Home / End keys move focus to first/last
+         - Optional single-open mode via data-single="true"
+         - Smooth height transitions by measuring scrollHeight and animating inline height
+         - Chevron rotation class 'open' toggled on expand
+    */
+
+    (function () {
+      const accordion = document.getElementById('faq');
+      const single = accordion.dataset.single === 'true';
+      const buttons = Array.from(accordion.querySelectorAll('.acc-btn'));
+
+      // Utility: expand an item
+      function expand(panel, btn) {
+        const content = panel.querySelector('.accordion-content');
+        // measure and set explicit height to enable transition
+        const startHeight = content.getBoundingClientRect().height; // usually 0
+        content.style.height = content.scrollHeight + 'px';
+        content.addEventListener('transitionend', function handler() {
+          // clear height to allow internal content changes to resize naturally
+          content.style.height = 'auto';
+          content.removeEventListener('transitionend', handler);
+        });
+        btn.setAttribute('aria-expanded', 'true');
+        panel.querySelector('.chev')?.classList.add('open');
+      }
+
+      // Utility: collapse an item
+      function collapse(panel, btn) {
+        const content = panel.querySelector('.accordion-content');
+        // from auto to px: compute current height
+        const curHeight = content.getBoundingClientRect().height;
+        // if height is 'auto', set it to current px height first
+        content.style.height = curHeight + 'px';
+        // required to flush layout so the next height triggers transition
+        requestAnimationFrame(() => {
+          content.style.height = '0px';
+        });
+        btn.setAttribute('aria-expanded', 'false');
+        panel.querySelector('.chev')?.classList.remove('open');
+      }
+
+      // Toggle helper
+      function toggle(panel, btn) {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        if (expanded) collapse(panel, btn);
+        else {
+          if (single) {
+            // close others
+            buttons.forEach(b => {
+              if (b !== btn) {
+                const p = b.closest('section');
+                if (b.getAttribute('aria-expanded') === 'true') collapse(p, b);
+              }
+            });
+          }
+          // ensure content height is 0 before expanding (in case DOM was left in 'auto')
+          const content = panel.querySelector('.accordion-content');
+          if (content.style.height === 'auto') content.style.height = '0px';
+          expand(panel, btn);
+        }
+      }
+
+      // Initialize: set all contents to height 0 and add event listeners
+      buttons.forEach((btn, idx) => {
+        const panel = btn.closest('section');
+        const content = panel.querySelector('.accordion-content');
+        // ensure collapsed state
+        content.style.height = '0px';
+        btn.addEventListener('click', () => toggle(panel, btn));
+
+        // keyboard support for each header button
+        btn.addEventListener('keydown', (e) => {
+          const key = e.key;
+          if (key === 'ArrowDown') {
+            e.preventDefault();
+            buttons[(idx + 1) % buttons.length].focus();
+          } else if (key === 'ArrowUp') {
+            e.preventDefault();
+            buttons[(idx - 1 + buttons.length) % buttons.length].focus();
+          } else if (key === 'Home') {
+            e.preventDefault();
+            buttons[0].focus();
+          } else if (key === 'End') {
+            e.preventDefault();
+            buttons[buttons.length - 1].focus();
+          } else if (key === 'Enter' || key === ' ') {
+            // Space or Enter toggles
+            e.preventDefault();
+            btn.click();
+          }
+        });
+      });
+
+      // Optional: expose simple API on element for programmatic control
+      accordion.accordionToggle = (index) => {
+        const btn = buttons[index];
+        if (!btn) return;
+        toggle(btn.closest('section'), btn);
+      };
+
+      // Progressive enhancement: if JS is disabled, the content should be visible —
+      // but here we intentionally collapsed; if you want visible-by-default, remove JS collapse in init.
+
+    })();
+  </script>
+</body>
+</html>
